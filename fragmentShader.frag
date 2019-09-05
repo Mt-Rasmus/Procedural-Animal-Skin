@@ -1,7 +1,6 @@
 
 uniform float delta;
 uniform vec3 lightPosition;
-varying float vOpacity;
 varying vec3 vPosition;
 varying vec3 vNormal;
 varying vec3 vWorldPosition;
@@ -284,9 +283,9 @@ void main() {
 
 	// Sphere:
 	// Creating different worley noise vectors giving different cell sizes/densities
-	vec2 F = cellular(vPosition*0.08);
-	vec2 S = cellular(vPosition*0.8);
-	vec2 R = cellular(vPosition*0.16);
+	vec2 F = cellular(vPosition*0.08); // large cells
+	vec2 S = cellular(vPosition*0.8); // small cells
+	vec2 R = cellular(vPosition*0.16); // medium cells
 
 	// Elephant (for GLTF elephant model):
 	//vec2 F = cellular(vPosition*2.4);
@@ -298,36 +297,31 @@ void main() {
 	float R1 = R.x; float R2 = R.y;
 	float nSize = 1.5;
 
-    worley1 = F2-F1;
-	worley2 = S2-S1;
-	worley3 = R2-R1;
+    worley1 = F2-F1; // large cells
+	worley2 = S2-S1; // small cells
+	worley3 = R2-R1; // medium cells
 	
-	snoise1 = 1.0*(snoise(vPosition/nSize/8.0) + 0.75*snoise(vPosition/(nSize*2.0)) + 0.55*snoise(vPosition/(nSize/8.0)) + 0.55*snoise(vPosition/(nSize/80.0)));
-	snoise1 = normalize(snoise1);
-
 	vec3 colorVec1 = vec3(0.5, 0.5, 0.5) + vec3(0.45, 0.365, 0.29)/1.75;
 	vec3 colorVec2 = vec3(0.45, 0.365, 0.29)/8.0 + vec3(0.75, 0.7, 0.65)/1.5;
+
+	// Using simplex noise to create a noisy pattern for the color to reside in
 	float colorspots = 2.0*snoise(vPosition/16.0) + 0.5*snoise(vPosition/8.0) + 0.25*snoise(vPosition/4.0);
+
+	// Using the mix method to interpolate the two colors, using the simplex noise scalar
 	vec3 colorVec = colorVec1*mix(colorVec1, colorVec2, colorspots);
 
     // simple hardcoded lighting
     float c = 0.035 + max(0.0, dot(vNormal, lightDirection)) * 1.5;
-	// gl_FragColor = vec4(c,c,c, 1.0);
 
-	float c1 = 0.05;
-	worley1 = worley1 + c1*normalize(smoothstep(0.0, 0.05, F2-F1));
+	worley1 = F2-F1 + 0.05*normalize(smoothstep(0.0, 0.05, F2-F1));
 
-	vec3 cR = (vPosition);
-	
-	// float disp = 10000.0*smoothstep(0.7,0.8, F2-F1)*snoise(cR);
-	float disp = normalize(smoothstep(0.6,0.65, R2-R1)*10.0);//snoise(cR);
-	
-	worley2 = 3.5*worley2*worley3 + worley2*mix(R2, R1, 0.01)*0.55;
+	// Combining the different worley scalars to create the final Worley noise scalar
+	float worleyFinal = worley1*worley2*( 3.5*worley3 + mix(R2, R1, 0.01)*0.55 );
 
+	// Used to limit the nrightness of the surface, to keep the toned down grey hue
 	float brightnessCurb = smoothstep(0.0, 0.1, S2-S1);
-	disp = normalize(disp*(0.75 - smoothstep(0.0, 0.1, disp)));
 
-	gl_FragColor = (c + 0.75 - brightnessCurb) * normalize(vec4(7.0*colorVec*worley1*worley2*c, 1.0));
+	gl_FragColor = (c + 0.5 - brightnessCurb) * normalize(vec4(7.0*colorVec*worleyFinal*c, 1.0));
  	
 }
 

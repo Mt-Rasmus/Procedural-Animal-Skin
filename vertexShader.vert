@@ -192,18 +192,16 @@ void main()
 {
 	
 	vPosition = position;
-    vOpacity = vertexDisplacement;
-
-    // vNormal = normal;
-    // if (vNormal.y < 0.0) vNormal.y *= -1.0;
 
     float val, worley1, worley2, worley3;
 	
-	vec2 F = cellular(vPosition*0.08);
-	vec2 S = cellular(vPosition*0.8);
-	vec2 R = cellular(vPosition*0.16);
+	// Calling Worley function with different scalar value factors,
+	// resulting in different cell sizes
+	vec2 F = cellular(vPosition*0.08); // Large cells
+	vec2 S = cellular(vPosition*0.8); // Small cells
+	vec2 R = cellular(vPosition*0.16); // Medium cells
 
-	// Elephant:
+	// Elephant (for GLTF elephant model):
 	//vec2 F = cellular(vPosition*2.4);
 	//vec2 S = cellular(vPosition*24.0);
 	//vec2 R = cellular(vPosition*4.8);
@@ -212,19 +210,17 @@ void main()
 	float S1 = S.x; float S2 = S.y;  
 	float R1 = R.x; float R2 = R.y;
 
-    worley1 = F2-F1;
-	worley2 = S2-S1;
-	worley3 = R2-R1;
+    worley1 = F2-F1; // Large cells
+	worley2 = S2-S1; // Small cells
+	worley3 = R2-R1; // Medium cells
 
-    val = 10.0*(F2-F1);
+	// Used to "flatten out" the Worley cell high value peaks
 	val = 3.0*smoothstep(0.0, 0.5, F2-F1); 
-	//val = aastep(0.05, val);
-	
-/////////////////////////////////////////////////////////////////////////////////////////
 
-    vec3 pos = position + val * normal;
+	// Setting vertex position based on smoothstep function and normal direction
+	vec3 pos = position + val * normal; 
 
-    // just add some noise to the normal
+    // Adding some noise to the normal
     vNormal = normalMatrix * vec3(normal + normalize(val) * 0.2);
 
     vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
@@ -232,9 +228,7 @@ void main()
     // store the world position as varying for lighting
     vWorldPosition = worldPosition.xyz;
 
+	// Calculating vector position
     gl_Position = projectionMatrix * viewMatrix * worldPosition;
-
- //  gl_Position = projectionMatrix * viewMatrix * worldPosition;
- //  gl_Position = projectionMatrix * modelViewPosition + 7.0 * vec4(vNormal, 1.0);
 
 }
